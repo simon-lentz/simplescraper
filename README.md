@@ -1,4 +1,4 @@
-# Simple Scraper: A Web Scraping Application
+# SimpleScraper: A Web Scraping Application
 
 This application is designed for web scraping purposes. It uses Selenium WebDriver for browser automation, Docker for containerization, and a proxy management system for IP rotation.
 

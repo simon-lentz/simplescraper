@@ -205,6 +205,7 @@ class TargetConfig(BaseModel):
     follow_links: bool = True
     interactions: Optional[List[Dict[str, List[str]]]] = None
     extractions: Optional[List[Dict[str, List[str]]]] = [{"page_source": "source"}]
+    startup: Optional[Dict[str, str]] = None  # {"cookies": "cookies selector"}
 
 
 class ConfigError(Exception):

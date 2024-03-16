@@ -51,3 +51,13 @@ def dropdown(
         select_element.select_by_value(value)
     except Exception as e:
         raise RuntimeError(f"failed to select {value} from {select_element}: {e}")
+
+
+"""
+TODO
+1. Make specific interactions for a "startup" config dict that will be like:
+   {"cookies": "cookies selector", "terms": "terms and conditions selector", etc.}
+
+2. The TargetManager should then use the target domain value with the startup dict
+   to prepare the target page for the specific interactions and extractions
+"""

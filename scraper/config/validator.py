@@ -203,6 +203,8 @@ class TargetConfig(BaseModel):
         "https://www.scrapethissite.com/pages/simple/", pattern=r"^https?://"
     )
     follow_links: bool = True
+    interactions: Optional[List[Dict[str, List[str]]]] = None
+    extractions: Optional[List[Dict[str, List[str]]]] = [{"page_source": "source"}]
 
 
 class ConfigError(Exception):

@@ -1,4 +1,3 @@
-from typing import List
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -52,20 +51,3 @@ def dropdown(
         select_element.select_by_value(value)
     except Exception as e:
         raise RuntimeError(f"failed to select {value} from {select_element}: {e}")
-
-
-def perform_interactions(driver, interactions: List[List]):
-    for interaction in interactions:
-        try:
-            match interaction[0]:
-                case "click":
-                    click(driver, interaction[1])
-                case "paginate":
-                    while True:
-                        paginate(driver, interaction[1])
-                case "dropdown":
-                    dropdown(driver, interaction[1], interaction[2])
-                case _:
-                    raise Exception(f"Unknown Interaction '{interaction[0]}'")
-        except Exception as e:
-            raise e

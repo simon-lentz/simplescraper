@@ -29,6 +29,11 @@ def parse_arguments():
         default="yaml",
         help="Defaults to YAML, also supports: JSON, TOML",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug logging",
+    )
     return parser.parse_args()
 
 
@@ -36,6 +41,7 @@ def run_cli():
     args = parse_arguments()
     target_type = args.target_type
     config_format = args.config_format.lower()
+    debug_mode = args.debug
 
     # Convert config format to file extension
     if config_format in ["yaml", "json", "toml"]:
@@ -69,6 +75,13 @@ def run_cli():
             return None, None
 
     logger_cfg = cfg["logging"]
+
+    if debug_mode:
+        logger_cfg.log_level = "DEBUG"
+    else:
+        logger_cfg.log_level = "ERROR"
+
+    logger = StructuredLogger(target_type, logger_cfg)
     logger = StructuredLogger(target_type, logger_cfg)
 
     return logger, cfg

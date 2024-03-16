@@ -56,6 +56,8 @@ class StructuredLogger(logging.Logger):
         self.log_directory = cfg.log_directory
         self.log_file = self._get_new_log_file()
         self.log_max_size = self._parse_log_max_size(cfg.log_max_size)
+        self.logger = logging.getLogger(target_type)
+        self.logger.setLevel(cfg.log_level.upper())
         self._configure_file_handler(cfg.log_level)
 
     def _get_new_log_file(self):

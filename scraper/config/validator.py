@@ -191,21 +191,31 @@ class DriverConfig(BaseModel):
         return v
 
 
+# allow empty string for TargetConfig
+target_opts = ConfigDict(
+    extra="forbid",
+    validate_assignment=True,
+    str_to_lower=True,
+    str_strip_whitespace=True,
+)
+
+
 class TargetConfig(BaseModel):
     """
     Pydantic model for target configuration.
     """
 
-    model_config = opts
+    model_config = target_opts
 
     target_name: str = "simple"
     target_domain: str = Field(
         "https://www.scrapethissite.com/pages/simple/", pattern=r"^https?://"
     )
-    follow_links: bool = True
-    interactions: Optional[List[Dict[str, List[str]]]] = None
-    extractions: Optional[List[Dict[str, List[str]]]] = [{"page_source": "source"}]
-    startup: Optional[Dict[str, str]] = None  # {"cookies": "cookies selector"}
+    input_file: Optional[Path] = None
+    output_file: Optional[Path] = None
+    startup: Optional[List[Dict[str, str]]] = None
+    interactions: Optional[List[Dict[str, str]]] = None
+    extractions: Optional[List[Dict[str, str]]] = [{"source": ""}]
 
 
 class ConfigError(Exception):

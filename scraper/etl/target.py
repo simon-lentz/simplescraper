@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import List
 
 import scraper.etl.interaction as interaction
 import scraper.etl.extraction as extraction
@@ -8,19 +8,27 @@ from scraper.config.logging import StructuredLogger
 
 
 class TargetManager:
-    def __init__(self, logger: StructuredLogger, cfgs: List[TargetConfig]):
+    def __init__(self, logger: StructuredLogger):
         self.logger = logger
-        self.targets: Dict[str, TargetConfig] = {}
 
-        self._assign_targets(cfgs)
+    def load_input(self, data) -> List[str]:
+        """Loads the list of links from the target input file"""
+        input_file = data.input_file
+        if input_file.exists():
+            with open(input_file, "r") as file:
+                return [line.strip() for line in file if line.strip()]
 
-    def _assign_targets(self, cfgs: List[TargetConfig]):
-        for cfg in cfgs:
-            self.targets[cfg.target_name] = cfg
+    def perform_startup(self, driver, data: TargetConfig):
+        startup = data.startup
+        if startup:
+            for startup_dict in startup:
+                try:
+                    self._perform_interaction(driver, startup_dict)
+                except Exception as e:
+                    self.logger.error(f"Error performing startup item: {e}", exc_info=True)  # noqa:E501
 
-    def perform_interactions(self, driver, target: str):
-        target_data = self.targets[target]
-        interactions = target_data.interactions
+    def perform_interactions(self, driver, data: TargetConfig):
+        interactions = data.interactions
         if interactions:
             for interaction_dict in interactions:
                 try:
@@ -36,10 +44,9 @@ class TargetManager:
             except Exception as e:
                 raise Exception(f"Error performing interaction '{interaction_name}': {e}")   # noqa:E501
 
-    def perform_extractions(self, driver, target: str):
+    def perform_extractions(self, driver, data: TargetConfig):
         extracted_data = {}
-        target_data = self.targets[target]
-        extractions = target_data.extractions
+        extractions = data.extractions
         if extractions:
             for extraction_dict in extractions:
                 try:
@@ -57,15 +64,3 @@ class TargetManager:
                 return extraction_name, data
             except Exception as e:
                 raise Exception(f"Error performing extraction '{extraction_name}': {e}")
-
-
-"""
-TODO
-1. I think it makes sense to have the first entry in the value list
-   be the selector type (for selenium By type), which can then be
-   parsed and passed to the extraction/interaction function to allow
-   for someone to use the selector of their choice.
-2. The current ignored param values "extraction_name, _" will need to be
-   integrated into more complex interactions/extractions over time,
-   for now just the default target sources will be ok.
-"""

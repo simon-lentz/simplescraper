@@ -124,7 +124,8 @@ class ProxyManager:
                 executor.submit(self._test_proxy, proxy): proxy for proxy in proxy_pool
             }  # noqa:E501
             try:
-                for future in concurrent.futures.as_completed(futures, timeout=20):
+                timeout = len(futures) * 10
+                for future in concurrent.futures.as_completed(futures, timeout=timeout):
                     proxy = futures[future]
                     try:
                         if future.result():

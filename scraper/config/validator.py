@@ -216,8 +216,8 @@ class TargetConfig(BaseModel):
     """
     Pydantic model for target configuration.
     """
-    target_name: str = "simple"
-    target_domain: str = "https://www.scrapethissite.com/pages/simple/"
+    name: str = "simple"
+    domain: str = "https://www.scrapethissite.com/pages/simple/"
     input_file: Optional[Path] = None
     output_file: Optional[Path] = None
     startup: Optional[List[Action]] = None

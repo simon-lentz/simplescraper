@@ -215,10 +215,9 @@ def setup_controller(logger: StructuredLogger, cfg) -> WebController:
         ValueError: If the number of target names does not match the number of ports.
     """
     connections = {}
-    for target_cfg in cfg["target"]:
-        target_name = target_cfg.target_name
+    for target in cfg["target"]:
         port = cfg["docker"].ports.pop(0)  # Assume ports are assigned in order
-        connections[target_name] = ConnectionData(target_name, port)
+        connections[target.name] = ConnectionData(target.name, port)
     controller = WebController(logger, connections)
     controller.init_proxy_manager(cfg["proxy"])
     controller.init_docker_manager(cfg["docker"])

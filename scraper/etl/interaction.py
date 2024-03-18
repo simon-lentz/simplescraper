@@ -1,53 +1,27 @@
+from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.select import Select
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-def click(driver: WebDriver, locator: str, timeout: float = 3, polling: float = 0.05):
-    try:
-        WebDriverWait(driver, timeout, polling).until(
-            EC.element_to_be_clickable((By.XPATH, locator))
-        ).click()
-    except Exception as e:
-        raise RuntimeError(f"click failed: {e}")
-
-
-def paginate(
-    driver: WebDriver, locator: str, timeout: float = 3, polling: float = 0.05
-) -> bool:
+def click(driver: WebDriver, locator: str):
     """
-    Handles pagination if applicable, clicking the 'next' button to load more items.
+    Attempts to click on a web element immediately. If unsuccessful, it waits
+    for the element to be clickable and tries using Action Chains.
     """
+    element = None  # Define element outside of try-except to avoid scope issues
     try:
-        WebDriverWait(driver, timeout, polling).until(
-            EC.element_to_be_clickable((By.XPATH, locator))
-        ).click()
-        return True
+        # First, try to find and click the element immediately
+        element = driver.find_element(By.XPATH, locator)
+        driver.execute_script("arguments[0].scrollIntoView();", element)
+        element.click()
     except Exception:
-        return False
-
-
-def dropdown(
-    driver: WebDriver,
-    locator: str,
-    value: str,
-    timeout: float = 3,
-    polling: float = 0.05,
-):
-    """
-    Selects a value from a dropdown menu identified by the dropdown_locator.
-    """
-    try:
-        select_element = Select(
-            WebDriverWait(driver, timeout, polling).until(
-                EC.visibility_of_element_located((By.XPATH, locator))
+        try:
+            # If immediate interaction fails, then wait and retry with Action Chains
+            element = WebDriverWait(driver, 1, 0.05).until(
+                EC.element_to_be_clickable((By.XPATH, locator))
             )
-        )
-    except Exception as e:
-        raise RuntimeError(f"failed to select dropdown with {locator}: {e}")
-    try:
-        select_element.select_by_value(value)
-    except Exception as e:
-        raise RuntimeError(f"failed to select {value} from {select_element}: {e}")
+            ActionChains(driver).move_to_element(element).click(element).perform()
+        except Exception as e:
+            raise Exception(f"Element '{locator}' could not be clicked: {e}")  # noqa:E501

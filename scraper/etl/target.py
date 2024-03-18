@@ -1,7 +1,7 @@
 from typing import List
 
-import scraper.etl.interaction as interaction
-import scraper.etl.extraction as extraction
+import scraper.etl.interaction as interact
+import scraper.etl.extraction as extract
 
 from scraper.config.validator import TargetConfig
 from scraper.config.logging import StructuredLogger
@@ -11,56 +11,74 @@ class TargetManager:
     def __init__(self, logger: StructuredLogger):
         self.logger = logger
 
-    def load_input(self, data) -> List[str]:
+    def load_input(self, data: TargetConfig) -> List[str]:
         """Loads the list of links from the target input file"""
         input_file = data.input_file
         if input_file.exists():
-            with open(input_file, "r") as file:
-                return [line.strip() for line in file if line.strip()]
+            try:
+                with open(input_file, "r") as file:
+                    return [line.strip() for line in file if line.strip()]
+            except Exception as e:
+                self.logger.error(f"Failed to read links from input file '{input_file}' for '{data.target_name}': {e}")  # noqa:E501
+                raise
+        else:
+            raise FileNotFoundError(f"Failed to load '{input_file}' for '{data.target_name}'")  # noqa:E501
 
     def perform_startup(self, driver, data: TargetConfig):
         startup = data.startup
         if startup:
-            for startup_dict in startup:
+            for action in startup:
                 try:
-                    self._perform_interaction(driver, startup_dict)
+                    self._do_interaction(driver, **action.dict())
                 except Exception as e:
-                    self.logger.error(f"Error performing startup item: {e}", exc_info=True)  # noqa:E501
+                    raise e
+        else:
+            self.logger.info(f"No startup actions specified for '{data.target_name}'")
 
     def perform_interactions(self, driver, data: TargetConfig):
         interactions = data.interactions
         if interactions:
-            for interaction_dict in interactions:
+            for interaction in interactions:
                 try:
-                    self._perform_interaction(driver, interaction_dict)
+                    self._do_interaction(driver, **interaction.dict())
                 except Exception as e:
-                    self.logger.error(f"Error performing interaction: {e}", exc_info=True)   # noqa:E501
+                    raise e
+        else:
+            self.logger.info(f"No interactions specified for '{data.target_name}'")
 
-    def _perform_interaction(self, driver, interaction_dict):
-        for interaction_name, params in interaction_dict.items():
-            try:
-                interaction_func = getattr(interaction, interaction_name)
-                interaction_func(driver, *params)
-            except Exception as e:
-                raise Exception(f"Error performing interaction '{interaction_name}': {e}")   # noqa:E501
+    def _do_interaction(self, driver, type: str, selector: str, **kwargs):
+        match type:
+            case "click":
+                try:
+                    interact.click(driver, selector)
+                except Exception as e:
+                    self.logger.warning(f"Failed to click '{selector}': {e}", exc_info=True)  # noqa:E501
 
     def perform_extractions(self, driver, data: TargetConfig):
-        extracted_data = {}
+        extracted_data = []
         extractions = data.extractions
         if extractions:
-            for extraction_dict in extractions:
+            for extraction in extractions:
                 try:
-                    extraction_name, data = self._perform_extraction(driver, extraction_dict)  # noqa:E501
-                    extracted_data[extraction_name] = data
+                    output = self._do_extraction(driver, **extraction.dict())
+                    extracted_data.append(output)
                 except Exception as e:
-                    self.logger.error(f"Error performing extraction: {e}", exc_info=True)  # noqa:E501
-        return extracted_data
+                    raise e
+            return extracted_data
+        else:
+            self.logger.info(f"No extractions specified for '{data.target_name}'")
 
-    def _perform_extraction(self, driver, extraction_dict):
-        for extraction_name, _ in extraction_dict.items():
-            try:
-                extraction_func = getattr(extraction, extraction_name)
-                data = extraction_func(driver)  # driver, *params
-                return extraction_name, data
-            except Exception as e:
-                raise Exception(f"Error performing extraction '{extraction_name}': {e}")
+    def _do_extraction(self, driver, type: str, selector: str, **kwargs):
+        match type:
+            case "source":
+                try:
+                    page_source_string = extract.source(driver)
+                    return page_source_string
+                except Exception as e:
+                    self.logger.warning(f"Failed to extract page source: {e}", exc_info=True)  # noqa:E501
+            case "table":
+                try:
+                    table = extract.table(driver, selector)
+                    return table
+                except Exception as e:
+                    self.logger.warning(f"Failed to extract table from '{selector}': {e}", exc_info=True)  # noqa:E501

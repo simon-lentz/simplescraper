@@ -11,7 +11,9 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from requests.exceptions import ConnectionError
 from docker.errors import APIError, ImageNotFound
-from pydantic import BaseModel, ConfigDict, ValidationError, field_validator, Field
+from pydantic import (
+    BaseModel, ConfigDict, ValidationError, field_validator, Field,
+)
 
 opts = ConfigDict(
     extra="forbid",
@@ -200,22 +202,27 @@ target_opts = ConfigDict(
 )
 
 
+class Action(BaseModel):
+    type: str
+    selector: str
+
+
+class Extraction(BaseModel):
+    type: str
+    selector: str
+
+
 class TargetConfig(BaseModel):
     """
     Pydantic model for target configuration.
     """
-
-    model_config = target_opts
-
     target_name: str = "simple"
-    target_domain: str = Field(
-        "https://www.scrapethissite.com/pages/simple/", pattern=r"^https?://"
-    )
+    target_domain: str = "https://www.scrapethissite.com/pages/simple/"
     input_file: Optional[Path] = None
     output_file: Optional[Path] = None
-    startup: Optional[List[Dict[str, str]]] = None
-    interactions: Optional[List[Dict[str, str]]] = None
-    extractions: Optional[List[Dict[str, str]]] = [{"source": ""}]
+    startup: Optional[List[Action]] = None
+    interactions: Optional[List[Action]] = None
+    extractions: Optional[List[Extraction]] = None
 
 
 class ConfigError(Exception):

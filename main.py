@@ -1,5 +1,6 @@
 from scraper.etl.runtime import run_scraper
 from scraper.cmd.cli import run_cli
+from scraper.web.controller import setup_controller
 
 
 def main():
@@ -11,7 +12,9 @@ def main():
     logger.info("Starting Web Scraper")
 
     try:
-        run_scraper(logger, cfg)
+        controller = setup_controller(logger, cfg)
+        targets = cfg["target"]
+        run_scraper(logger, controller, targets)
     except Exception as e:
         logger.critical(f"Fatal Error: {e}", exc_info=True)
         return

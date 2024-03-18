@@ -82,6 +82,5 @@ def run_cli():
         logger_cfg.log_level = "ERROR"
 
     logger = StructuredLogger(target_type, logger_cfg)
-    logger = StructuredLogger(target_type, logger_cfg)
 
     return logger, cfg

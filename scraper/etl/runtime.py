@@ -1,37 +1,39 @@
-from .target import TargetManager
+from typing import List
 
 from scraper.config.logging import StructuredLogger
-from scraper.web.controller import setup_controller
+from scraper.web.controller import WebController
+from scraper.config.validator import TargetConfig
+
+from .target import TargetManager
 
 
-def run_scraper(logger: StructuredLogger, cfg):
-    controller = setup_controller(logger, cfg)
-    target_manager = TargetManager(logger)
+def run_scraper(logger: StructuredLogger, controller: WebController, targets: List[TargetConfig]):  # noqa:E501
+    manager = TargetManager(logger)
     try:
         controller.connect()
     except Exception as e:
         logger.critical(f"Scraper failed to connect: {e}", exc_info=True)
-    for config in cfg["target"]:
+    for cfg in targets:
         try:
-            connection = controller.get_connection(config.target_name)
+            connection = controller.get_connection(cfg.target_name)
             driver = connection.get_driver()
-            controller.make_request(config.target_name, config.target_domain)
-            target_manager.perform_startup(driver, config)
-            logger.info(f"Startup complete for '{config.target_name}'")  # noqa:E501
-            links = target_manager.load_input(config)
+            controller.make_request(cfg.target_name, cfg.target_domain)
+            manager.perform_startup(driver, cfg)
+            logger.info(f"Startup complete for '{cfg.target_name}'")  # noqa:E501
+            links = manager.load_input(cfg)
             for link in links:
-                controller.make_request(config.target_name, link)
+                controller.make_request(cfg.target_name, link)
                 try:
-                    target_manager.perform_interactions(driver, config)
+                    manager.perform_interactions(driver, cfg)
                 except Exception as e:
-                    logger.warning(f"TargetManager failed to perform interactions for '{config.target_name}': {e}", exc_info=True)  # noqa:E501
+                    logger.warning(f"TargetManager failed to perform interactions for '{cfg.target_name}': {e}", exc_info=True)  # noqa:E501
                 try:
-                    extracted_config = target_manager.perform_extractions(driver, config)  # noqa:E501
-                    logger.info(f"TargetManager for '{config.target_name}' extracted: '{extracted_config}'")  # noqa:E501
+                    extracted_cfg = manager.perform_extractions(driver, cfg)  # noqa:E501
+                    logger.info(f"TargetManager for '{cfg.target_name}' extracted: '{extracted_cfg}'")  # noqa:E501
                 except Exception as e:
-                    logger.warning(f"TargetManager failed to perform extractions for '{config.target_name}': {e}", exc_info=True)  # noqa:E501
+                    logger.warning(f"TargetManager failed to perform extractions for '{cfg.target_name}': {e}", exc_info=True)  # noqa:E501
         except Exception as e:
-            logger.warning(f"Startup failed for '{config.target_name}': {e}", exc_info=True)  # noqa:E501
+            logger.warning(f"Startup failed for '{cfg.target_name}': {e}", exc_info=True)  # noqa:E501
     try:
         controller.disconnect()
     except Exception as e:

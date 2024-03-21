@@ -15,8 +15,6 @@ from pydantic import (
     BaseModel, ConfigDict, ValidationError, field_validator, Field,
 )
 
-from scraper.etl.target import TargetConfig
-
 opts = ConfigDict(
     extra="forbid",
     validate_assignment=True,
@@ -193,6 +191,36 @@ class DriverConfig(BaseModel):
         if not v:
             raise ValueError("Host network cannot be empty")
         return v
+
+
+# allow empty string for TargetConfig
+target_opts = ConfigDict(
+    extra="forbid",
+    validate_assignment=True,
+)
+
+
+class Extraction(BaseModel):
+    model_config = target_opts
+    type: str
+    selector: str
+
+
+class Interaction(BaseModel):
+    model_config = target_opts
+    type: str
+    selector: str
+
+
+class TargetConfig(BaseModel):
+    model_config = target_opts
+
+    name: str
+    domain: str
+    input_file: Optional[Path] = None
+    startup: Optional[List[Interaction]] = None
+    interactions: Optional[List[Interaction]] = None
+    extractions: Optional[List[Extraction]] = None
 
 
 class ConfigError(Exception):

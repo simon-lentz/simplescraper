@@ -1,29 +1,12 @@
-from typing import List, Optional
-from pathlib import Path
-from pydantic import ConfigDict, BaseModel
+from typing import List
 
 from scraper.config.logging import StructuredLogger
+from scraper.config.validator import TargetConfig
 from scraper.web.controller import WebController
 
-from .extraction import ExtractionManager, Extraction
-from .interaction import InteractionManager, Interaction
 
-# allow empty string for TargetConfig
-target_opts = ConfigDict(
-    extra="forbid",
-    validate_assignment=True,
-)
-
-
-class TargetConfig(BaseModel):
-    model_config = target_opts
-
-    name: str
-    domain: str
-    input_file: Optional[Path] = None
-    startup: Optional[List[Interaction]] = None
-    interactions: Optional[List[Interaction]] = None
-    extractions: Optional[List[Extraction]] = None
+from .extraction import ExtractionManager
+from .interaction import InteractionManager
 
 
 class TargetManager:

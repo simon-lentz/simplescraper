@@ -1,8 +1,8 @@
 from typing import List
 
+from scraper.config.validator import TargetConfig
 from scraper.config.logging import StructuredLogger
 from scraper.web.controller import WebController
-from scraper.config.validator import TargetConfig
 
 from .target import TargetManager
 

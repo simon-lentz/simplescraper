@@ -1,13 +1,8 @@
 from typing import List
-from pydantic import BaseModel
 
+from scraper.config.validator import Interaction
 from scraper.config.logging import StructuredLogger
 from scraper.web.controller import WebController
-
-
-class Interaction(BaseModel):
-    type: str
-    selector: str
 
 
 class InteractionManager:

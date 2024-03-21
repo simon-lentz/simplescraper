@@ -15,6 +15,8 @@ from pydantic import (
     BaseModel, ConfigDict, ValidationError, field_validator, Field,
 )
 
+from scraper.etl.target import TargetConfig
+
 opts = ConfigDict(
     extra="forbid",
     validate_assignment=True,
@@ -31,10 +33,10 @@ class LoggingConfig(BaseModel):
 
     model_config = opts
 
-    log_directory: Path = Path("./files/logs")
-    log_level: str = "INFO"
-    log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    log_max_size: str = Field(default="10MB", pattern=r"^\d+[KMGBkmgb][Bb]?$")
+    log_directory: Path
+    log_level: str
+    log_format: str
+    log_max_size: str = Field(..., pattern=r"^\d+[KMGBkmgb][Bb]?$")
 
     @field_validator("log_level")
     @classmethod
@@ -64,13 +66,13 @@ class DockerConfig(BaseModel):
 
     model_config = opts
 
-    ports: list[int] = [4444, 4445]
-    container_shm_size: str = Field(default="2g", pattern=r"^\d+[KMGBkmgb][Bb]?$")
-    container_image: str = "seleniarm/standalone-firefox:latest"
+    ports: List[int]
+    container_shm_size: str = Field(..., pattern=r"^\d+[KMGBkmgb][Bb]?$")
+    container_image: str
     remove_on_cleanup: bool = True
-    environment: dict[str, str] = {"TZ": "Europe/Berlin"}
+    environment: Optional[Dict[str, str]] = None
     network_mode: str = "bridge"
-    resource_limits: dict[str, str] = {"cpu_quota": "0.5", "memory_limit": "1g"}
+    resource_limits: Optional[Dict[str, str]] = None
 
     @field_validator("ports")
     @classmethod
@@ -143,11 +145,11 @@ class ProxyConfig(BaseModel):
 
     model_config = opts
 
-    input_file: Path = Path("./files/examples/proxy_pool.txt")
-    test_url: str = Field(default="https://httpbin.org/ip", pattern=r"^https?://")
-    usage_limit: int = Field(default=100, gt=0)
+    input_file: Path
+    test_url: str = Field(..., pattern=r"^https?://")
+    usage_limit: int = Field(..., gt=0)
     validation: bool = True
-    proxy_type: str = Field(default="HTTP", pattern=r"^(HTTP|HTTPS|SOCKS4|SOCKS5)$")
+    proxy_type: str = Field(..., pattern=r"^(HTTP|HTTPS|SOCKS4|SOCKS5)$")
     authentication: Optional[Dict[str, str]] = None
 
     @field_validator("input_file")
@@ -178,11 +180,11 @@ class DriverConfig(BaseModel):
 
     model_config = opts
 
-    host_network: str = "http://localhost"
-    option_args: List[str] = ["--headless", "--width=1920", "--height=1080"]
+    host_network: str
+    option_args: Optional[List[str]] = ["--headless", "--width=1920", "--height=1080"]
     proxy: bool = True
     retry_attempts: int = Field(default=3, gt=0)
-    retry_interval: int = Field(default=2, gt=0)
+    retry_interval: int = Field(default=0.5, gt=0)
     user_agent: Optional[str] = None
 
     @field_validator("host_network")
@@ -191,38 +193,6 @@ class DriverConfig(BaseModel):
         if not v:
             raise ValueError("Host network cannot be empty")
         return v
-
-
-# allow empty string for TargetConfig
-target_opts = ConfigDict(
-    extra="forbid",
-    validate_assignment=True,
-    str_to_lower=True,
-    str_strip_whitespace=True,
-)
-
-
-class Action(BaseModel):
-    type: str
-    selector: str
-
-
-class Extraction(BaseModel):
-    type: str
-    selector: str
-
-
-class TargetConfig(BaseModel):
-    """
-    Pydantic model for target configuration.
-    """
-    name: str = "simple"
-    domain: str = "https://www.scrapethissite.com/pages/simple/"
-    input_file: Optional[Path] = None
-    output_file: Optional[Path] = None
-    startup: Optional[List[Action]] = None
-    interactions: Optional[List[Action]] = None
-    extractions: Optional[List[Extraction]] = None
 
 
 class ConfigError(Exception):

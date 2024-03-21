@@ -204,12 +204,28 @@ class Extraction(BaseModel):
     model_config = target_opts
     type: str
     selector: str
+    selector_strategy: str
+    unique: bool = True
+    output_type: str = None
+    output_file: Path = None
+    exclude_tags: Optional[List[str]] = None
+
+    @field_validator("output_type")
+    @classmethod
+    def check_output_type(cls, v: str) -> Optional[str]:
+        if v:
+            v = v.strip().lower().lstrip('.').replace(" ", "")
+            valid_types = ["csv", "json", "txt", "text", "pandas", "pickle", "pkl", "dataframe", "df"]  # noqa:E501
+            if v not in valid_types:
+                raise ValueError(f"Invalid output type: {v}. Valid types are {valid_types}")  # noqa:E501
+            return v
+        return None
 
 
 class Interaction(BaseModel):
     model_config = target_opts
     type: str
-    selector: str
+    selector: Optional[str] = None
 
 
 class TargetConfig(BaseModel):

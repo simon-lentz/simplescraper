@@ -1,4 +1,6 @@
+import pandas as pd
 from typing import List
+from pathlib import Path
 
 from scraper.config.logging import StructuredLogger
 from scraper.config.validator import TargetConfig
@@ -21,9 +23,11 @@ class TargetManager:
         # retrieve links, perform interactions
         for link in self._get_target_links(target):
             self.interact.execute(target.name, link, target.interactions)
-            self.extract.execute(target.name, link, target.extractions)
+            extraction_results = self.extract.execute(target.name, link, target.extractions)  # noqa:E501
+            for output_file, result in extraction_results.items():
+                self.write_output(result["data"], result["output_type"], Path(output_file))  # noqa:E501
 
-    def _get_target_links(self, target: TargetConfig) -> List[str]:  # noqa:501
+    def _get_target_links(self, target: TargetConfig) -> List[str]:
         input_file = target.input_file
         if input_file.exists():
             try:
@@ -31,3 +35,26 @@ class TargetManager:
                     return [line.strip() for line in file if line.strip()]
             except Exception as e:
                 self.logger.error(f"Failed to read links from input file '{input_file}' for '{target.name}': {e}")  # noqa:E501
+
+    def write_output(self, data: List[List[str]], output_type: str, output_file: Path):
+        if not data:
+            self.logger.info(f"No data to write for output file: {output_file}")
+            return
+        df = pd.DataFrame(data)
+        # Create the directory if it doesn't exist
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        match output_type.lower():
+            case "csv":
+                df.to_csv(output_file, index=False, header=False)
+                self.logger.info(f"CSV file created: {output_file}")
+            case "json":
+                df.to_json(output_file, orient='records', lines=True)
+                self.logger.info(f"JSON file created: {output_file}")
+            case "txt" | "text":
+                df.to_csv(output_file, index=False, header=False, sep='\t')
+                self.logger.info(f"Text file created: {output_file}")
+            case "pandas" | "pkl" | "pickle" | "df" | "dataframe":
+                df.to_pickle(output_file)
+                self.logger.info(f"Pandas DataFrame file created: {output_file}")
+            case _:
+                self.logger.error(f"Unsupported output type '{output_type}'")

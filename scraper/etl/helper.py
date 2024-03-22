@@ -4,11 +4,14 @@ from typing import List, Optional
 from bs4 import BeautifulSoup
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import (
     NoSuchElementException,
-    ElementNotInteractableException
+    ElementNotInteractableException,
+    TimeoutException
 )
 
 from .exceptions import (
@@ -21,18 +24,28 @@ from .exceptions import (
 )
 
 
-def get_element(driver: WebDriver, locator: str, locator_type: str) -> WebElement:
+def get_element(driver: WebDriver, locator: str, locator_type: str, wait_interval: float) -> WebElement:  # noqa:E501
     by_type = parse_locator(locator_type)
     try:
-        element = driver.find_element(by_type, locator)
-        return element
-    except Exception as e:
-        raise ElementNotFoundException(f"Element not found: {locator}") from e
+        return driver.find_element(by_type, locator)
+    except NoSuchElementException:
+        return retry_get_element(driver, locator, locator_type, wait_interval)
 
 
-def get_elements(driver: WebDriver, locator: str, locator_type: str) -> List[WebElement]:  # noqa:E501
+def retry_get_element(driver: WebDriver, locator: str, locator_type: str, wait_interval: float) -> WebElement:  # noqa:E501
     by_type = parse_locator(locator_type)
     try:
+        return WebDriverWait(driver, wait_interval).until(
+            EC.presence_of_element_located((by_type, locator))
+        )
+    except TimeoutException as e:
+        raise ElementNotFoundException(f"Element not found after retrying: {locator}") from e  # noqa:E501
+
+
+def get_elements(driver: WebDriver, locator: str, locator_type: str, wait_interval: float) -> List[WebElement]:  # noqa:E501
+    by_type = parse_locator(locator_type)
+    try:
+        _ = get_element(driver, locator, locator_type, wait_interval)
         elements = driver.find_elements(by_type, locator)
         return elements
     except Exception as e:
@@ -41,17 +54,28 @@ def get_elements(driver: WebDriver, locator: str, locator_type: str) -> List[Web
 
 def click(driver: WebDriver, locator: str, locator_type: str, wait_interval: float) -> None:  # noqa:E501
     try:
-        element = get_element(driver, locator, locator_type)
+        element = get_element(driver, locator, locator_type, wait_interval)
         element.click()
-        if wait_interval > 0:
-            time.sleep(wait_interval)  # Wait for the specified interval
+    except Exception:
+        # If the initial click fails, try again with explicit waits
+        retry_click(driver, locator, locator_type, wait_interval)
+
+
+def retry_click(driver: WebDriver, locator: str, locator_type: str, wait_interval: float) -> None:  # noqa:E501
+    by_type = parse_locator(locator_type)
+    try:
+        # Wait for the element to be clickable
+        element = WebDriverWait(driver, wait_interval).until(
+            EC.element_to_be_clickable((by_type, locator))
+        )
+        element.click()
     except Exception as e:
         raise ClickException(f"Failed to click on element: {locator}") from e
 
 
 def dropdown(driver: WebDriver, locator: str, locator_type: str, wait_interval: float, option_text: str) -> None:  # noqa:E501
     try:
-        element = get_element(driver, locator, locator_type)
+        element = get_element(driver, locator, locator_type, wait_interval)
         select = Select(element)
         select.select_by_visible_text(option_text)
         if wait_interval > 0:

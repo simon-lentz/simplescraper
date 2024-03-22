@@ -58,15 +58,17 @@ class TargetManager:
         output_file.parent.mkdir(parents=True, exist_ok=True)
         match output_type.lower():
             case "csv":
-                df.to_csv(output_file, index=False, header=False)
-                self.logger.info(f"Output for '{name}' written to CSV: {output_file}")
+                df.to_csv(output_file, mode='a', index=False, header=False)
+                self.logger.info(f"Output for '{name}' appended to CSV: {output_file}")
             case "json":
+                # have to use the actual stream to append to...
                 df.to_json(output_file, orient='records', lines=True)
                 self.logger.info(f"Output for '{name}' written to JSON: {output_file}")
             case "txt" | "text":
-                df.to_csv(output_file, index=False, header=False, sep='\t')
-                self.logger.info(f"Output for '{name}' written to TXT: {output_file}")
+                df.to_csv(output_file, mode='a', index=False, header=False, sep='\t')
+                self.logger.info(f"Output for '{name}' appended to TXT: {output_file}")
             case "pandas" | "pkl" | "pickle" | "df" | "dataframe":
+                # have to concat to the existing file...
                 df.to_pickle(output_file)
                 self.logger.info(f"Output for '{name}' written to PKL: {output_file}")
             case _:

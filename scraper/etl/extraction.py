@@ -42,13 +42,13 @@ class ExtractionManager:
             match extraction.type:
                 case "element":
                     if extraction.unique:
-                        element = get_element(self.driver, extraction.locator, extraction.locator_type)  # noqa:E501
+                        element = get_element(self.driver, extraction.locator, extraction.locator_type, extraction.wait_interval)  # noqa:E501
                         return [parse_element(element, exclude_tags=extraction.exclude_tags)]  # noqa:E501
                     else:
-                        elements = get_elements(self.driver, extraction.locator, extraction.locator_type)  # noqa:E501
+                        elements = get_elements(self.driver, extraction.locator, extraction.locator_type, extraction.wait_interval)  # noqa:E501
                         return [parse_element(element, exclude_tags=extraction.exclude_tags) for element in elements]  # noqa:E501
                 case "table":
-                    element = get_element(self.driver, extraction.locator, extraction.locator_type)  # noqa:E501
+                    element = get_element(self.driver, extraction.locator, extraction.locator_type, extraction.wait_interval)  # noqa:E501
                     return parse_table(element, exclude_tags=extraction.exclude_tags)
                 case "source":
                     return [str(self.driver.page_source)]
@@ -73,13 +73,13 @@ class ExtractionManager:
                 match extraction.type:
                     case "element":
                         if extraction.unique:
-                            element = get_element(self.driver, extraction.locator, extraction.locator_type)  # noqa:E501
+                            element = get_element(self.driver, extraction.locator, extraction.locator_type, extraction.wait_interval)  # noqa:E501
                             page_data = [parse_element(element, exclude_tags=extraction.exclude_tags)]  # noqa:E501
                         else:
-                            elements = get_elements(self.driver, extraction.locator, extraction.locator_type)  # noqa:E501
+                            elements = get_elements(self.driver, extraction.locator, extraction.locator_type, extraction.wait_interval)  # noqa:E501
                             page_data = [parse_element(element, exclude_tags=extraction.exclude_tags) for element in elements]  # noqa:E501
                     case "table":
-                        element = get_element(self.driver, extraction.locator, extraction.locator_type)  # noqa:E501
+                        element = get_element(self.driver, extraction.locator, extraction.locator_type, extraction.wait_interval)  # noqa:E501
                         page_data = parse_table(element, exclude_tags=extraction.exclude_tags)  # noqa:E501
                     case "source":
                         page_data = [str(self.driver.page_source)]

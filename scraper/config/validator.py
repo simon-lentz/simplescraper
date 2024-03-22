@@ -205,7 +205,7 @@ class Extraction(BaseModel):
     type: str
     locator: str
     locator_type: str
-    wait_interval: float = 0
+    wait_interval: float = 0.5
     unique: bool = True
     pagination_locator: Optional[str] = None
     pagination_locator_type: Optional[str] = None
@@ -230,7 +230,7 @@ class Interaction(BaseModel):
     type: str
     locator: str
     locator_type: str
-    wait_interval: float = 0
+    wait_interval: float = 0.5
     option_text: Optional[str] = None
 
 

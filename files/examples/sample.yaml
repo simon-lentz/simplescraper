@@ -47,6 +47,18 @@ Target:
   - name: "hockey"
     domain: "https://www.scrapethissite.com/"
     input_file: "./files/data/input/hockey.txt"
+    startup:
+      actions:
+        accept_cookies:
+          type: "click"
+          locator: "cookie button"
+          locator_type: "css selector"
+          wait_interval: 0
+        accept_terms:
+          type: "click"
+          locator: "terms button"
+          locator_type: "css selector"
+          wait_interval: 0
     interactions:
       - type: "dropdown"
         locator: ".form-control.col-md-3"

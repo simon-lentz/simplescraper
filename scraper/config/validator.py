@@ -234,13 +234,17 @@ class Interaction(BaseModel):
     option_text: Optional[str] = None
 
 
+class Startup(BaseModel):
+    model_config = target_opts
+    actions: Dict[str, Interaction]
+
+
 class TargetConfig(BaseModel):
     model_config = target_opts
-
     name: str
     domain: str
     input_file: Optional[Path] = None
-    startup: Optional[List[Interaction]] = None
+    startup: Optional[Startup] = None
     interactions: Optional[List[Interaction]] = None
     extractions: Optional[List[Extraction]] = None
 

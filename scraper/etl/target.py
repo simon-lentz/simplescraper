@@ -8,6 +8,7 @@ from scraper.web.controller import WebController
 
 from .extraction import ExtractionManager
 from .interaction import InteractionManager
+from .startup import StartupManager
 
 
 class TargetManager:
@@ -16,16 +17,14 @@ class TargetManager:
         self.controller = controller
 
     def scrape_target(self, target: TargetConfig):
-
         try:
             # Perform startup actions with target domain
             if target.startup:
                 connection = self.controller.get_connection(target.name)
                 self.controller.make_request(target.name, target.domain)
                 driver = connection.driver
-                startup_interact = InteractionManager(self.logger, driver)
-                startup_interact.execute(target.name, target.startup)
-
+                startup = StartupManager(self.logger, driver)
+                startup.execute(target.name, target.startup)
             # Retrieve links, perform interactions
             for link in self._get_target_links(target):
                 connection = self.controller.get_connection(target.name)
@@ -38,7 +37,6 @@ class TargetManager:
                 extraction_results = extract.execute(target.name, target.extractions)
                 for output_file, result in extraction_results.items():
                     self.write_output(target.name, result["data"], result["output_type"], Path(output_file))  # noqa:E501
-
         except Exception as e:
             self.logger.error(f"Failed to scrape '{target.name}': {e}", exc_info=True)
 

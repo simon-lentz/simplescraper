@@ -6,7 +6,6 @@ from scraper.config.logging import StructuredLogger
 from scraper.config.validator import TargetConfig
 from scraper.web.controller import WebController
 
-
 from .extraction import ExtractionManager
 from .interaction import InteractionManager
 
@@ -14,26 +13,34 @@ from .interaction import InteractionManager
 class TargetManager:
     def __init__(self, logger: StructuredLogger, controller: WebController):
         self.logger = logger
-        self.interact = InteractionManager(logger, controller)
-        self.extract = ExtractionManager(logger, controller)
+        self.controller = controller
 
     def scrape_target(self, target: TargetConfig):
-        # perform startup actions with target domain
-        if target.startup:
-            try:
-                self.interact.execute(target.name, target.domain, target.startup)
-            except Exception as e:
-                self.logger.warning(f"Failed to perform startup interactions for '{target.name}': {e}")  # noqa:E501
-        # retrieve links, perform interactions
-        for link in self._get_target_links(target):
-            if target.interactions:
-                try:
-                    self.interact.execute(target.name, link, target.interactions)
-                except Exception as e:
-                    self.logger.warning(f"Failed to perform interactions for '{target.name}': {e}", exc_info=True)  # noqa:E501
-            extraction_results = self.extract.execute(target.name, link, target.extractions)  # noqa:E501
-            for output_file, result in extraction_results.items():
-                self.write_output(target.name, result["data"], result["output_type"], Path(output_file))  # noqa:E501
+
+        try:
+            # Perform startup actions with target domain
+            if target.startup:
+                connection = self.controller.get_connection(target.name)
+                self.controller.make_request(target.name, target.domain)
+                driver = connection.driver
+                startup_interact = InteractionManager(self.logger, driver)
+                startup_interact.execute(target.name, target.startup)
+
+            # Retrieve links, perform interactions
+            for link in self._get_target_links(target):
+                connection = self.controller.get_connection(target.name)
+                self.controller.make_request(target.name, link)
+                driver = connection.driver
+                if target.interactions:
+                    interact = InteractionManager(self.logger, driver)
+                    interact.execute(target.name, target.interactions)
+                extract = ExtractionManager(self.logger, driver)
+                extraction_results = extract.execute(target.name, target.extractions)
+                for output_file, result in extraction_results.items():
+                    self.write_output(target.name, result["data"], result["output_type"], Path(output_file))  # noqa:E501
+
+        except Exception as e:
+            self.logger.error(f"Failed to scrape '{target.name}': {e}", exc_info=True)
 
     def _get_target_links(self, target: TargetConfig) -> List[str]:
         input_file = target.input_file
@@ -42,7 +49,7 @@ class TargetManager:
                 with open(input_file, "r") as file:
                     return [line.strip() for line in file if line.strip()]
             except Exception as e:
-                self.logger.error(f"Failed to read links from input file '{input_file}' for '{target.name}': {e}")  # noqa:E501
+                self.logger.error(f"Failed to read links from input file '{input_file}' for '{target.name}': {e}", exc_info=True)  # noqa:E501
 
     def write_output(self, name: str, data: List[List[str]], output_type: str, output_file: Path):  # noqa:E501
         if not data:

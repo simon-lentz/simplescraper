@@ -205,7 +205,9 @@ class Extraction(BaseModel):
     type: str
     locator: str
     locator_type: str
+    wait_interval: float = 0
     unique: bool = True
+    pagination: bool = False
     output_type: str = None
     output_file: Path = None
     exclude_tags: Optional[List[str]] = None
@@ -227,6 +229,8 @@ class Interaction(BaseModel):
     type: str
     locator: str
     locator_type: str
+    wait_interval: float = 0
+    option_text: Optional[str] = None
 
 
 class TargetConfig(BaseModel):

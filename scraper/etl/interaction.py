@@ -1,35 +1,47 @@
 from typing import List
+from selenium.webdriver.remote.webdriver import WebDriver
 
 from scraper.config.validator import Interaction
 from scraper.config.logging import StructuredLogger
-from scraper.web.controller import WebController
 
-from .helper import get_element
+from .helper import click, dropdown
+from .exceptions import (
+    ElementNotFoundException,
+    ClickException,
+    DropdownSelectionException,
+)
 
 
 class InteractionManager:
-    def __init__(self, logger: StructuredLogger, controller: WebController):
+    def __init__(self, logger: StructuredLogger, driver: WebDriver):
         self.logger = logger
-        self.controller = controller
+        self.driver = driver
 
-    def execute(self, name: str, url: str, interactions: List[Interaction]):
-        connection = self.controller.get_connection(name)
-        driver = connection.driver
-        self.controller.make_request(name, url)
+    def execute(self, name: str, interactions: List[Interaction]):
         for interaction in interactions:
             try:
-                self._perform_interaction(driver, interaction)
+                self._perform_interaction(interaction)
             except Exception as e:
                 self.logger.error(f"Failed to perform interaction '{interaction.type}' for '{name}': {e}", exc_info=True)  # noqa:E501
-        pass
 
-    def _perform_interaction(self, driver, interaction: Interaction) -> None:
+    def _perform_interaction(self, interaction: Interaction) -> None:
         try:
             match interaction.type:
                 case "click":
-                    _ = get_element(driver, interaction.locator, interaction.locator_type)  # noqa:E501
-                    # click element function
+                    click(self.driver, interaction.locator, interaction.locator_type, interaction.wait_interval)  # noqa:E501
+                    self.logger.info(f"Clicked on element: {interaction.locator}")
+                case "dropdown":
+                    if interaction.option_text is None:
+                        raise ValueError("option_text is required for dropdown interactions")  # noqa:E501
+                    dropdown(self.driver, interaction.locator, interaction.locator_type, interaction.wait_interval, interaction.option_text)  # noqa:E501
+                    self.logger.info(f"Selected '{interaction.option_text}' from dropdown: {interaction.locator}")  # noqa:E501
                 case _:
-                    self.logger.warning(f"Undefined interaction '{interaction.type}'")
+                    self.logger.error(f"Undefined interaction '{interaction.type}'")
+        except ElementNotFoundException as e:
+            self.logger.error(f"Element not found during interaction '{interaction.type}': {e}", exc_info=True)  # noqa:E501
+        except ClickException as e:
+            self.logger.error(f"Click failed during interaction '{interaction.type}': {e}", exc_info=True)  # noqa:E501
+        except DropdownSelectionException as e:
+            self.logger.error(f"Dropdown selection failed during interaction '{interaction.type}': {e}", exc_info=True)  # noqa:E501
         except Exception as e:
-            self.logger.error(f"Failed to perform interaction '{interaction.type}': {e}")  # noqa:E501
+            self.logger.error(f"Unexpected error during interaction '{interaction.type}': {e}", exc_info=True)  # noqa:E501

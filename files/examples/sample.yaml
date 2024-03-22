@@ -39,6 +39,7 @@ Target:
       - type: "element"
         locator: ".col-md-4.country"
         locator_type: "CSS_SELECTOR"
+        wait_interval: 2
         unique: False
         output_type: "csv"
         output_file: "./files/data/output/countries.csv"
@@ -47,10 +48,16 @@ Target:
   - name: "hockey"
     domain: "https://www.scrapethissite.com/"
     input_file: "./files/data/input/hockey.txt"
+    interactions:
+      - type: "dropdown"
+        locator: ".form-control.col-md-3"
+        locator_type: "css selector"
+        wait_interval: 2
+        option_text: "100"
     extractions: 
-      - type: "source"
-        locator: ""
-        locator_type: ""
-        unique: True
-        output_type: "text" 
-        output_file: "./files/data/output/hockey.txt"
+      - type: "table"
+        locator: "table.table"
+        locator_type: "css selector"
+        wait_interval: 2
+        output_type: "csv" 
+        output_file: "./files/data/output/hockey.csv"

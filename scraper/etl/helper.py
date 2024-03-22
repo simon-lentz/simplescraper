@@ -28,6 +28,25 @@ def parse_element(element: WebElement, exclude_tags: Optional[List[str]] = None)
     return [entry.strip() for entry in text.split("&&&") if entry.strip()]
 
 
+def parse_table(element: WebElement, exclude_tags: Optional[List[str]] = None) -> List[List[str]]:  # noqa:E501
+    rows_data = []
+    html = element.get_attribute('outerHTML')  # Use 'outerHTML' to include tag itself
+    soup = BeautifulSoup(html, 'html.parser')
+
+    if exclude_tags:
+        for tag in exclude_tags:
+            for match in soup.find_all(tag):
+                match.decompose()  # Remove the matched tags and their content
+
+    rows = soup.find_all('tr')
+    for row in rows:
+        cells = row.find_all(['td', 'th'])  # Find all table data and header cells
+        row_data = [cell.get_text(strip=True) for cell in cells]
+        rows_data.append(row_data)
+
+    return rows_data
+
+
 def parse_locator(locator_type: str) -> By:
     formatted_strategy = locator_type.strip().replace(" ", "_").upper()
     match formatted_strategy:

@@ -5,7 +5,7 @@ from scraper.config.validator import Extraction
 from scraper.config.logging import StructuredLogger
 from scraper.web.controller import WebController
 
-from .helper import get_element, get_elements, parse_element
+from .helper import get_element, get_elements, parse_element, parse_table
 
 
 class ExtractionManager:
@@ -40,6 +40,9 @@ class ExtractionManager:
                     else:
                         elements = get_elements(driver, extraction.locator, extraction.locator_type)  # noqa:E501
                         return [parse_element(element, exclude_tags=extraction.exclude_tags) for element in elements]  # noqa:E501
+                case "table":
+                    element = get_element(driver, extraction.locator, extraction.locator_type)  # noqa:E501
+                    return parse_table(element, exclude_tags=extraction.exclude_tags)  # noqa:E501
                 case "source":
                     return [str(driver.page_source)]
                 case _:

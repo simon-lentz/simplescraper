@@ -33,7 +33,7 @@ class TargetManager:
                     self.logger.warning(f"Failed to perform interactions for '{target.name}': {e}", exc_info=True)  # noqa:E501
             extraction_results = self.extract.execute(target.name, link, target.extractions)  # noqa:E501
             for output_file, result in extraction_results.items():
-                self.write_output(result["data"], result["output_type"], Path(output_file))  # noqa:E501
+                self.write_output(target.name, result["data"], result["output_type"], Path(output_file))  # noqa:E501
 
     def _get_target_links(self, target: TargetConfig) -> List[str]:
         input_file = target.input_file
@@ -44,7 +44,7 @@ class TargetManager:
             except Exception as e:
                 self.logger.error(f"Failed to read links from input file '{input_file}' for '{target.name}': {e}")  # noqa:E501
 
-    def write_output(self, data: List[List[str]], output_type: str, output_file: Path):
+    def write_output(self, name: str, data: List[List[str]], output_type: str, output_file: Path):  # noqa:E501
         if not data:
             self.logger.error(f"No data to write for output file: {output_file}")
             return
@@ -54,15 +54,15 @@ class TargetManager:
         match output_type.lower():
             case "csv":
                 df.to_csv(output_file, index=False, header=False)
-                self.logger.info(f"Output written to CSV: {output_file}")
+                self.logger.info(f"Output for '{name}' written to CSV: {output_file}")
             case "json":
                 df.to_json(output_file, orient='records', lines=True)
-                self.logger.info(f"Output written to JSON: {output_file}")
+                self.logger.info(f"Output for '{name}' written to JSON: {output_file}")
             case "txt" | "text":
                 df.to_csv(output_file, index=False, header=False, sep='\t')
-                self.logger.info(f"Output written to TXT: {output_file}")
+                self.logger.info(f"Output for '{name}' written to TXT: {output_file}")
             case "pandas" | "pkl" | "pickle" | "df" | "dataframe":
                 df.to_pickle(output_file)
-                self.logger.info(f"Output written to PKL: {output_file}")
+                self.logger.info(f"Output for '{name}' written to PKL: {output_file}")
             case _:
-                self.logger.error(f"Unsupported output type '{output_type}'")
+                self.logger.error(f"Unsupported output type for '{name}': '{output_type}'")  # noqa:E501

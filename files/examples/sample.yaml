@@ -37,8 +37,8 @@ Target:
     input_file: "./files/data/input/countries.txt"
     extractions: 
       - type: "element"
-        selector: ".col-md-4.country"
-        selector_strategy: "CSS_SELECTOR"
+        locator: ".col-md-4.country"
+        locator_type: "CSS_SELECTOR"
         unique: False
         output_type: "csv"
         output_file: "./files/data/output/countries.csv"
@@ -49,8 +49,8 @@ Target:
     input_file: "./files/data/input/hockey.txt"
     extractions: 
       - type: "source"
-        selector: ""
-        selector_strategy: ""
+        locator: ""
+        locator_type: ""
         unique: True
         output_type: "text" 
         output_file: "./files/data/output/hockey.txt"

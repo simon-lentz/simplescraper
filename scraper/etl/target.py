@@ -19,10 +19,18 @@ class TargetManager:
 
     def scrape_target(self, target: TargetConfig):
         # perform startup actions with target domain
-        self.interact.start(target.name, target.domain, target.startup)
+        if target.startup:
+            try:
+                self.interact.execute(target.name, target.domain, target.startup)
+            except Exception as e:
+                self.logger.warning(f"Failed to perform startup interactions for '{target.name}': {e}")  # noqa:E501
         # retrieve links, perform interactions
         for link in self._get_target_links(target):
-            self.interact.execute(target.name, link, target.interactions)
+            if target.interactions:
+                try:
+                    self.interact.execute(target.name, link, target.interactions)
+                except Exception as e:
+                    self.logger.warning(f"Failed to perform interactions for '{target.name}': {e}", exc_info=True)  # noqa:E501
             extraction_results = self.extract.execute(target.name, link, target.extractions)  # noqa:E501
             for output_file, result in extraction_results.items():
                 self.write_output(result["data"], result["output_type"], Path(output_file))  # noqa:E501
@@ -38,7 +46,7 @@ class TargetManager:
 
     def write_output(self, data: List[List[str]], output_type: str, output_file: Path):
         if not data:
-            self.logger.info(f"No data to write for output file: {output_file}")
+            self.logger.error(f"No data to write for output file: {output_file}")
             return
         df = pd.DataFrame(data)
         # Create the directory if it doesn't exist
@@ -46,15 +54,15 @@ class TargetManager:
         match output_type.lower():
             case "csv":
                 df.to_csv(output_file, index=False, header=False)
-                self.logger.info(f"CSV file created: {output_file}")
+                self.logger.info(f"Output written to CSV: {output_file}")
             case "json":
                 df.to_json(output_file, orient='records', lines=True)
-                self.logger.info(f"JSON file created: {output_file}")
+                self.logger.info(f"Output written to JSON: {output_file}")
             case "txt" | "text":
                 df.to_csv(output_file, index=False, header=False, sep='\t')
-                self.logger.info(f"Text file created: {output_file}")
+                self.logger.info(f"Output written to TXT: {output_file}")
             case "pandas" | "pkl" | "pickle" | "df" | "dataframe":
                 df.to_pickle(output_file)
-                self.logger.info(f"Pandas DataFrame file created: {output_file}")
+                self.logger.info(f"Output written to PKL: {output_file}")
             case _:
                 self.logger.error(f"Unsupported output type '{output_type}'")

@@ -203,8 +203,8 @@ target_opts = ConfigDict(
 class Extraction(BaseModel):
     model_config = target_opts
     type: str
-    selector: str
-    selector_strategy: str
+    locator: str
+    locator_type: str
     unique: bool = True
     output_type: str = None
     output_file: Path = None
@@ -225,7 +225,8 @@ class Extraction(BaseModel):
 class Interaction(BaseModel):
     model_config = target_opts
     type: str
-    selector: Optional[str] = None
+    locator: str
+    locator_type: str
 
 
 class TargetConfig(BaseModel):

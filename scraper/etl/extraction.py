@@ -25,9 +25,9 @@ class ExtractionManager:
                 if extraction.wait_interval > 0:
                     time.sleep(extraction.wait_interval)
                 if not extraction.pagination_locator:
-                    data = self._perform_extraction(extraction)
+                    data = self._perform_extraction(name, extraction)
                 else:
-                    data = self._perform_paginated_extraction(extraction)
+                    data = self._perform_paginated_extraction(name, extraction)
                 if extraction.output_file:
                     extraction_results[str(extraction.output_file)] = {
                         "data": data,
@@ -37,20 +37,24 @@ class ExtractionManager:
                 self.logger.error(f"Failed to extract '{extraction.type}' for '{name}': {e}", exc_info=True)  # noqa:E501
         return extraction_results
 
-    def _perform_extraction(self, extraction: Extraction) -> List:
+    def _perform_extraction(self, name: str, extraction: Extraction) -> List:
         try:
             match extraction.type:
                 case "element":
                     if extraction.unique:
                         element = get_element(self.driver, extraction.locator, extraction.locator_type, extraction.wait_interval)  # noqa:E501
+                        self.logger.info(f"Extraction for '{name}' complete")
                         return [parse_element(element, exclude_tags=extraction.exclude_tags)]  # noqa:E501
                     else:
                         elements = get_elements(self.driver, extraction.locator, extraction.locator_type, extraction.wait_interval)  # noqa:E501
+                        self.logger.info(f"Extraction for '{name}' complete")
                         return [parse_element(element, exclude_tags=extraction.exclude_tags) for element in elements]  # noqa:E501
                 case "table":
                     element = get_element(self.driver, extraction.locator, extraction.locator_type, extraction.wait_interval)  # noqa:E501
+                    self.logger.info(f"Extraction for '{name}' complete")
                     return parse_table(element, exclude_tags=extraction.exclude_tags)
                 case "source":
+                    self.logger.info(f"Extraction for '{name}' complete")
                     return [str(self.driver.page_source)]
                 case _:
                     self.logger.error(f"Undefined extraction '{extraction.type}'")
@@ -65,9 +69,15 @@ class ExtractionManager:
             self.logger.error(f"Failed to parse table during extraction '{extraction.type}': {e}", exc_info=True)  # noqa:E501
             return []
 
-    def _perform_paginated_extraction(self, extraction: Extraction) -> List:  # noqa:E501
+    def _perform_paginated_extraction(self, name, extraction: Extraction) -> List:  # noqa:E501
         all_data = []
         page_count = 0
+        locators = {
+            "pagination": extraction.pagination_locator,
+            "pagination_type": extraction.pagination_locator_type,
+            "last_page": extraction.last_page_locator,
+            "last_page_type": extraction.last_page_locator_type,
+        }
         while True:
             try:
                 match extraction.type:
@@ -88,7 +98,8 @@ class ExtractionManager:
                         page_data = []
                 all_data.extend(page_data)
                 page_count += 1
-                more_pages = paginate(self.driver, extraction.pagination_locator, extraction.pagination_locator_type, extraction.wait_interval, page_count)  # noqa:E501
+                self.logger.info(f"Paginating for '{name}', current page: {page_count}")
+                more_pages = paginate(self.driver, locators, extraction.wait_interval, page_count)  # noqa:E501
                 if not more_pages:
                     break
             except ElementNotFoundException as e:
@@ -100,4 +111,5 @@ class ExtractionManager:
             except ParseTableException as e:
                 self.logger.error(f"Failed to parse table during extraction '{extraction.type}': {e}", exc_info=True)  # noqa:E501
                 break
+        self.logger.info(f"Extraction for '{name}' complete")
         return all_data

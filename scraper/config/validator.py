@@ -209,6 +209,8 @@ class Extraction(BaseModel):
     unique: bool = True
     pagination_locator: Optional[str] = None
     pagination_locator_type: Optional[str] = None
+    last_page_locator: Optional[str] = None
+    last_page_locator_type: Optional[str] = None
     output_type: str
     output_file: Path
     exclude_tags: Optional[List[str]] = None

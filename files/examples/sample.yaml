@@ -39,7 +39,6 @@ Target:
       - type: "element"
         locator: ".col-md-4.country"
         locator_type: "CSS_SELECTOR"
-        wait_interval: 2
         unique: False
         output_type: "csv"
         output_file: "./files/data/output/countries.csv"
@@ -59,5 +58,7 @@ Target:
         locator: "table.table"
         locator_type: "css selector"
         wait_interval: 2
+        pagination_locator: 'ul.pagination'
+        pagination_locator_type: 'css selector'
         output_type: "csv" 
         output_file: "./files/data/output/hockey.csv"

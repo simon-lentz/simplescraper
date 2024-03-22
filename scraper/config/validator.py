@@ -207,9 +207,10 @@ class Extraction(BaseModel):
     locator_type: str
     wait_interval: float = 0
     unique: bool = True
-    pagination: bool = False
-    output_type: str = None
-    output_file: Path = None
+    pagination_locator: Optional[str] = None
+    pagination_locator_type: Optional[str] = None
+    output_type: str
+    output_file: Path
     exclude_tags: Optional[List[str]] = None
 
     @field_validator("output_type")

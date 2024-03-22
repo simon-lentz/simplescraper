@@ -6,6 +6,10 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    ElementNotInteractableException
+)
 
 from .exceptions import (
     ElementNotFoundException,
@@ -110,3 +114,23 @@ def parse_locator(locator_type: str) -> By:
             return By.XPATH
         case _:
             raise LocatorTypeException(f"Unsupported Selenium By-type '{formatted_strategy}'")  # noqa:E501
+
+
+def paginate(driver: WebDriver, locator: str, locator_type: str, wait_interval: float, page_count: int = 0) -> bool:  # noqa:E501
+    by_type = parse_locator(locator_type)
+    try:
+        pagination_element = driver.find_element(by_type, locator)
+        pagination_items = pagination_element.find_elements(By.TAG_NAME, "li")
+        next_button = pagination_items[-1].find_element(By.TAG_NAME, "a")
+        # Assuming the second last item is the last page number
+        last_page = pagination_items[-2].find_element(By.TAG_NAME, "a")
+        last_page_num = int(last_page.text)
+        if next_button.is_enabled() and next_button.is_displayed():
+            next_button.click()
+            if wait_interval > 0:
+                time.sleep(wait_interval)
+            if page_count >= last_page_num:
+                return False
+            return True
+    except (NoSuchElementException, ElementNotInteractableException):
+        return False  # "Next" button not found or not clickable, assuming last page

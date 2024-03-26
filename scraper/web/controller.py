@@ -1,4 +1,6 @@
 from typing import Dict
+from selenium.webdriver.remote.webdriver import WebDriver
+from docker.models.containers import Container
 
 from scraper.config.logging import StructuredLogger
 from scraper.config.validator import ProxyConfig, DockerConfig, DriverConfig
@@ -110,6 +112,30 @@ class WebController:
             return connection
         else:
             raise ValueError(f"No connection found for target {target_name}")
+
+    def get_driver(self, target_name: str) -> WebDriver:
+        connection = self.connections.get(target_name)
+        try:
+            driver = connection.get_driver()
+            return driver
+        except Exception as e:
+            raise ValueError(f"No driver found for target {target_name}") from e
+
+    def get_container(self, target_name: str) -> Container:
+        connection = self.connections.get(target_name)
+        try:
+            container = connection.get_container()
+            return container
+        except Exception as e:
+            raise ValueError(f"No container found for target {target_name}") from e
+
+    def get_proxy(self, target_name: str) -> str:
+        connection = self.connections.get(target_name)
+        try:
+            proxy = connection.get_proxy()
+            return proxy
+        except Exception as e:
+            raise ValueError(f"No connection found for target {target_name}") from e
 
     def connect(self) -> None:
         """

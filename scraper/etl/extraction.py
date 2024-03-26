@@ -52,6 +52,8 @@ class ExtractionManager:
                     return parse_table(element, exclude_tags=extraction.exclude_tags)  # noqa:E501
                 case "source":
                     return [str(self.driver.page_source)]
+                case "img" | "image":
+                    pass  # with_ocr == True
                 case _:
                     self.logger.error(f"Undefined extraction '{extraction.type}'")
             return []
@@ -83,6 +85,8 @@ class ExtractionManager:
                         page_data = parse_table(element, exclude_tags=extraction.exclude_tags)  # noqa:E501
                     case "source":
                         page_data = [str(self.driver.page_source)]
+                    case "img" | "image":
+                        pass  # with_ocr == True
                     case _:
                         self.logger.error(f"Undefined extraction '{extraction.type}'")
                         page_data = []

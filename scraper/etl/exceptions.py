@@ -20,3 +20,7 @@ class ParseTableException(Exception):
 
 class LocatorTypeException(Exception):
     pass
+
+
+class OCRException(Exception):
+    pass

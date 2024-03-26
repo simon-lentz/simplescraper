@@ -209,11 +209,9 @@ class Extraction(BaseModel):
     unique: bool = True
     pagination_locator: Optional[str] = None
     pagination_locator_type: Optional[str] = None
-    last_page_locator: Optional[str] = None
-    last_page_locator_type: Optional[str] = None
+    exclude_tags: Optional[Dict[str, List[str]]] = None
     output_type: str
     output_file: Path
-    exclude_tags: Optional[List[str]] = None
 
     @field_validator("output_type")
     @classmethod
@@ -246,6 +244,7 @@ class TargetConfig(BaseModel):
     name: str
     domain: str
     input_file: Optional[Path] = None
+    supplemental_input_data: Optional[bool] = None
     startup: Optional[Startup] = None
     interactions: Optional[List[Interaction]] = None
     extractions: Optional[List[Extraction]] = None

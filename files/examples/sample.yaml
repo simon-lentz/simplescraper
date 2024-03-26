@@ -43,7 +43,7 @@ Target:
         output_type: "csv"
         output_file: "./files/data/output/countries.csv"
         exclude_tags:
-          - "strong"
+          label: ["strong"]
   - name: "hockey"
     domain: "https://www.scrapethissite.com/"
     input_file: "./files/data/input/hockey.txt"

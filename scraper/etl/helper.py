@@ -1,6 +1,6 @@
 import time
 
-from typing import List, Optional
+from typing import List, Dict, Optional
 from bs4 import BeautifulSoup
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
@@ -10,7 +10,6 @@ from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import (
     NoSuchElementException,
-    ElementNotInteractableException,
     TimeoutException
 )
 
@@ -98,19 +97,27 @@ def parse_element(element: WebElement, exclude_tags: Optional[List[str]] = None)
         raise ParseElementException("Failed to parse element") from e
 
 
-def parse_table(element: WebElement, exclude_tags: Optional[List[str]] = None) -> List[List[str]]:  # noqa:E501
+def parse_table(element: WebElement, exclude_tags: Optional[Dict[str, List[str]]] = None) -> List[List[str]]:  # noqa:E501
     try:
         rows_data = []
         html = element.get_attribute('outerHTML')
         soup = BeautifulSoup(html, 'html.parser')
         if exclude_tags:
-            for tag in exclude_tags:
+            for tag, attrs in exclude_tags.items():
                 for match in soup.find_all(tag):
-                    match.decompose()
+                    for attr in attrs:
+                        if match.has_attr(attr):
+                            match.decompose()
         rows = soup.find_all('tr')
         for row in rows:
             cells = row.find_all(['td', 'th'])
-            row_data = [cell.get_text(strip=True) for cell in cells]
+            row_data = []
+            for cell in cells:
+                cell_text = cell.get_text(strip=True)
+                row_data.append(cell_text)
+                a_tag = cell.find('a', href=True)
+                if a_tag:
+                    row_data.append(a_tag['href'])
             rows_data.append(row_data)
         return rows_data
     except Exception as e:
@@ -140,21 +147,15 @@ def parse_locator(locator_type: str) -> By:
             raise LocatorTypeException(f"Unsupported Selenium By-type '{formatted_strategy}'")  # noqa:E501
 
 
-def paginate(driver: WebDriver, locators: dict, wait_interval: float, page_count: int = 0) -> bool:  # noqa:E501
-    paginate_by_type = parse_locator(locators["pagination_type"])
-    by_type = parse_locator(locators["last_page_type"])
+def paginate(driver: WebDriver, locator: str, locator_type: str, wait_interval: float) -> bool:  # noqa:E501
+    by_type = parse_locator(locator_type)
     try:
-        next_button = driver.find_element(paginate_by_type, locators["pagination"])
-        # Assuming the second last item is the last page number
-        last_page = driver.find_element(by_type, locators["last_page"])
-        last_page_num = int(last_page.text)
-        if not next_button.is_enabled():
-            return False
+        next_button = WebDriverWait(driver, wait_interval, 0.05).until(
+            EC.element_to_be_clickable((by_type, locator))
+        )
+        if "disabled" in next_button.get_attribute("class"):
+            return False  # Next button is disabled, indicating the last page
         next_button.click()
-        if wait_interval > 0:
-            time.sleep(wait_interval)
-        if page_count >= last_page_num:
-            return False
         return True
-    except (NoSuchElementException, ElementNotInteractableException):
-        return False  # "Next" button not found or not clickable, assuming last page
+    except Exception:
+        return False

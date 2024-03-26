@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import List
+from typing import List, Dict
 from pathlib import Path
 
 from scraper.config.logging import StructuredLogger
@@ -26,9 +26,9 @@ class TargetManager:
                 startup = StartupManager(self.logger, driver)
                 startup.execute(target.name, target.startup)
             # Retrieve links, perform interactions
-            for link in self._get_target_links(target):
+            for link_info in self._get_target_links(target):
                 connection = self.controller.get_connection(target.name)
-                self.controller.make_request(target.name, link)
+                self.controller.make_request(target.name, link_info['link'])
                 driver = connection.driver
                 if target.interactions:
                     interact = InteractionManager(self.logger, driver)
@@ -36,18 +36,33 @@ class TargetManager:
                 extract = ExtractionManager(self.logger, driver)
                 extraction_results = extract.execute(target.name, target.extractions)
                 for output_file, result in extraction_results.items():
-                    self.write_output(target.name, result["data"], result["output_type"], Path(output_file))  # noqa:E501
+                    if target.supplemental_input_data:
+                        # Prepend the input link to the additional_data list
+                        supplemented_data = [row + [link_info['link']] + link_info['additional_data'] for row in result["data"]]  # noqa:E501
+                    else:
+                        supplemented_data = [row for row in result["data"]]
+                    self.write_output(link_info['link'], supplemented_data, result["output_type"], Path(output_file))  # noqa:E501
         except Exception as e:
             self.logger.error(f"Failed to scrape '{target.name}': {e}", exc_info=True)
 
-    def _get_target_links(self, target: TargetConfig) -> List[str]:
+    def _get_target_links(self, target: TargetConfig) -> List[Dict[str, List[str]]]:
         input_file = target.input_file
-        if input_file.exists():
+        if input_file.exists() and input_file.suffix == '.txt':
             try:
+                links_with_data = []
                 with open(input_file, "r") as file:
-                    return [line.strip() for line in file if line.strip()]
+                    for line in file:
+                        if line.strip():
+                            parts = line.strip().split(',')
+                            link = parts[0]
+                            additional_data = parts[1:] if target.supplemental_input_data and len(parts) > 1 else []  # noqa:E501
+                            links_with_data.append({'link': link, 'additional_data': additional_data})  # noqa:E501
+                return links_with_data
             except Exception as e:
-                self.logger.error(f"Failed to read links from input file '{input_file}' for '{target.name}': {e}", exc_info=True)  # noqa:E501
+                self.logger.error(f"Failed to read links from input TXT file '{input_file}' for '{target.name}': {e}", exc_info=True)  # noqa:E501
+        else:
+            self.logger.error(f"Unsupported input file extension for '{target.name}': '{input_file.suffix}'")  # noqa:E501
+        return []
 
     def write_output(self, name: str, data: List[List[str]], output_type: str, output_file: Path):  # noqa:E501
         if not data:

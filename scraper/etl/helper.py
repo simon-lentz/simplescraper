@@ -1,5 +1,5 @@
 import time
-
+from datetime import datetime
 from typing import List, Dict, Optional
 from bs4 import BeautifulSoup
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -118,6 +118,7 @@ def parse_table(element: WebElement, exclude_tags: Optional[Dict[str, List[str]]
                 a_tag = cell.find('a', href=True)
                 if a_tag:
                     row_data.append(a_tag['href'])
+            row_data.append(timestamp())
             rows_data.append(row_data)
         return rows_data
     except Exception as e:
@@ -159,3 +160,8 @@ def paginate(driver: WebDriver, locator: str, locator_type: str, wait_interval: 
         return True
     except Exception:
         return False
+
+
+def timestamp() -> str:
+    now = datetime.now()
+    return now.strftime("%m/%d/%Y")

@@ -30,7 +30,7 @@ class ExtractionManager:
                     data = self._perform_paginated_extraction(extraction)
                 if extraction.output_file:
                     extraction_results[str(extraction.output_file)] = {
-                        "data": data,
+                        "data": self._clean_data(data),
                         "output_type": extraction.output_type
                     }
             except Exception as e:
@@ -105,4 +105,7 @@ class ExtractionManager:
             except ParseTableException as e:
                 self.logger.error(f"Failed to parse table during extraction '{extraction.type}': {e}", exc_info=True)  # noqa:E501
                 break
-        return all_data
+        return self._clean_data(all_data)
+
+    def _clean_data(self, data: List[List[str]]) -> List[List[str]]:
+        return [[value.replace(",", "").replace("\t", " ").replace("\n", " ").replace("\r", "") for value in row] for row in data]  # noqa:E501
